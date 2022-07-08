@@ -1,7 +1,21 @@
 const express = require('express');
+const cors = require("cors")
 const { db_connection: db } = require('./infra/knexfile');
 
+const whitelist = ["http://localhost:3000"]
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error("Not allowed by CORS"))
+    }
+  },
+  credentials: true,
+}
+
 const app = express();
+app.use(cors(corsOptions))
 app.use(express.json());
 
 async function authenticationMiddleware(request, response, next) {
@@ -17,7 +31,7 @@ async function authenticationMiddleware(request, response, next) {
     return next();
 }
 
-app.post('/user', authenticationMiddleware, async function (request, response) {
+app.post('/user', async function (request, response) {
     const { name, password, email, birthDate } = request.body;
 
     const [dbresponse] = await db('users').insert({
@@ -34,6 +48,13 @@ app.get('/user', authenticationMiddleware, async function (request, response) {
     const dbResponse = await db('users').select('*');
 
     return response.status(200).json(dbResponse)
+});
+
+app.get('/user/:id', async function (request, response) {
+    const { id } = request.params;
+    const dbResponse = await db('users').where({id: Number(id)}).select('*');
+
+    return response.status(200).json(dbResponse);
 });
 
 app.patch('/message/:id', authenticationMiddleware, async (request, response) => {
@@ -94,6 +115,9 @@ app.get('/messages/received', authenticationMiddleware, async (request, response
 app.post('/message', authenticationMiddleware, async function (request, response) {
     const { user } = request;
     const { message, receiverId } = request.body;
+
+    const [userExits] = await db('users').where({id: Number(receiverId)}).select();
+    if(!userExits) return response.status(400).json({error: 'user does not exists'});
 
     await db('user_message').insert({
         sender_identifier: Number(user.id),
