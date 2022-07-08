@@ -92,7 +92,7 @@ app.get('/messages/sent', authenticationMiddleware, async (request, response) =>
             deleted_by_sender_at: null
         })
         .select()
-        .orderBy('createdAt', 'desc');
+        .orderBy('createdAt', 'ASC');
 
     return response.status(200).json(messages);
 });
@@ -107,7 +107,7 @@ app.get('/messages/received', authenticationMiddleware, async (request, response
             deleted_by_sender_at: null
          })
         .select()
-        .orderBy('createdAt', 'desc');
+        .orderBy('createdAt', 'ASC');
 
     return response.status(200).json(messages);
 });
